@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Daily Planner — Smart routine scheduler with alarms, circadian timing, and native device integration">
+    <meta name="theme-color" content="#0c0d12">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Daily Planner">
+    <title>Daily Planner — Smart Schedule & Alarms</title>
+
+    <!-- PWA Manifest & Favicon -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-96.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome 6 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Core Stylesheet -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="app-body">
+    <!-- Ambient Background Glow Gradients -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <!-- App Shell Container -->
+    <div id="app" class="app-container">
+
+        <!-- Header / Top Bar -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="app-logo">
+                    <div class="logo-icon">
+                        <span class="pi-symbol">&pi;</span>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-title">Pi<span class="text-gradient"> Scheduler</span></span>
+                        <span class="logo-subtitle">Daily Routine & Schedule Planner</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-center">
+                <div class="clock-telemetry" id="clockTelemetry">
+                    <span class="telemetry-time" id="currentTimeDisplay">00:00:00</span>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <button class="command-palette-btn" id="searchTriggerBtn" title="Open Command Palette (Ctrl+K)" aria-label="Command Palette">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span class="cmd-btn-label">Search commands...</span>
+                    <kbd class="cmd-kbd">Ctrl+K</kbd>
+                </button>
+                <button class="icon-btn" id="themeToggleBtn" title="Toggle Light/Dark Theme" aria-label="Toggle Theme">
+                    <i class="fa-solid fa-moon" id="themeIcon"></i>
+                </button>
+                <button class="btn btn-primary btn-sm" id="exportIcsBtn">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    <span>Save to Calendar</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Workspace: Bento Grid Layout -->
+        <main class="main-workspace" id="mainWorkspace">
+
+            <!-- TOP HERO STRIP: 24-Hour Gantt Timeline Visualizer -->
+            <section class="bento-card timeline-hero-card" id="timelineHeroSection">
+                <div class="card-header">
+                    <div class="card-header-title">
+                        <i class="fa-solid fa-chart-gantt text-accent"></i>
+                        <h2>24-Hour Timeline</h2>
+                    </div>
+                    <button class="btn btn-primary btn-sm timeline-add-task-btn" id="timelineAddTaskBtn">
+                        <i class="fa-solid fa-plus"></i> Add Task
+                    </button>
+
+                    <div class="timeline-header-actions">
+                        <div class="timeline-view-switcher" id="timelineViewSwitcher">
+                            <button class="view-pill active" data-view="table" title="View Full Day Schedule Table">
+                                <i class="fa-solid fa-table-list"></i> Schedule Table
+                            </button>
+                            <button class="view-pill" data-view="fit" title="Fit 24-Hour Day">
+                                <i class="fa-solid fa-compress"></i> 24H Fit
+                            </button>
+                            <button class="view-pill" data-view="active-day" title="Zoom into Active Hours (06:00 - 23:00)">
+                                <i class="fa-solid fa-sun"></i> Active Day
+                            </button>
+                            <button class="view-pill" data-view="detailed" title="Detailed Expanded Scrollable View">
+                                <i class="fa-solid fa-maximize"></i> Detailed (2x)
+                            </button>
+                        </div>
+
+                        <div class="timeline-legend">
+                            <span class="legend-item"><span class="legend-chip chip-sleep"></span>Sleep</span>
+                            <span class="legend-item"><span class="legend-chip chip-meal"></span>Meals</span>
+                            <span class="legend-item"><span class="legend-chip chip-workout"></span>Workouts</span>
+                            <span class="legend-item"><span class="legend-chip chip-hard"></span>Fixed Time</span>
+                            <span class="legend-item"><span class="legend-chip chip-flex"></span>Flexible</span>
+                            <span class="legend-item"><span class="legend-chip chip-free"></span>Free Gaps</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 24H Interactive Timeline Track Container -->
+                <div class="timeline-track-container" id="timelineTrackContainer" style="display: none;">
+                    <!-- Hours Ruler -->
+                    <div class="timeline-ruler" id="timelineRuler">
+                        <!-- Rendered dynamically 00:00 to 24:00 -->
+                    </div>
+
+                    <!-- Visual Segment Track -->
+                    <div class="timeline-visual-track" id="timelineVisualTrack">
+                        <!-- Dynamic event blocks injected here -->
+                        <div class="timeline-now-cursor" id="timelineNowCursor">
+                            <span class="now-label">NOW</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- EMPTY SCHEDULE HIGHLIGHT HERO BANNER -->
+                <div class="empty-schedule-hero" id="emptyScheduleBanner">
+                    <div class="empty-hero-content">
+                        <div class="empty-hero-icon">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        </div>
+                        <div class="empty-hero-text">
+                            <h3>Start Your Daily Schedule</h3>
+                            <p>Meals and sleep anchor your day. Choose a meal plan to automatically set up your daily routine.</p>
+                        </div>
+                        <button class="btn btn-primary btn-lg empty-hero-cta" id="startScheduleWizardBtn">
+                            <i class="fa-solid fa-calendar-plus"></i> Start New Schedule
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Embedded Day Schedule Table View -->
+                <div class="timeline-schedule-table-view" id="timelineScheduleTableView">
+                    <div class="schedule-table-header">
+                        <div class="table-header-info">
+                            <h3><i class="fa-solid fa-list-check text-accent"></i> Full Day Schedule Breakdown</h3>
+                            <span class="text-muted">Chronological order with precise time slots and schedule conflict status</span>
+                        </div>
+                        <div class="table-filters" id="tableCategoryFilters">
+                            <button class="filter-pill active" data-filter="all">All Events</button>
+                            <button class="filter-pill" data-filter="bedrock">Daily Routines</button>
+                            <button class="filter-pill" data-filter="tasks">Tasks</button>
+                            <button class="filter-pill" data-filter="free">Free Slots</button>
+                        </div>
+                    </div>
+                    <div class="schedule-table-wrapper">
+                        <table class="schedule-table" id="scheduleTable">
+                            <thead>
+                                <tr>
+                                    <th>Time Slot</th>
+                                    <th>Duration</th>
+                                    <th>Event &amp; Category</th>
+                                    <th>Schedule Type</th>
+                                    <th>Status</th>
+                                    <th>Alarm</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody">
+                                <!-- Injected dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Live Metrics Ribbon -->
+                <div class="timeline-metrics-ribbon">
+                    <div class="metric-node">
+                        <span class="metric-label">Waking Hours</span>
+                        <span class="metric-value text-indigo" id="metricCircadianWindow">16.0 hrs</span>
+                    </div>
+                    <div class="metric-node">
+                        <span class="metric-label">Scheduled Tasks</span>
+                        <span class="metric-value text-cyan" id="metricAllocatedWork">6.5 hrs</span>
+                    </div>
+                    <div class="metric-node">
+                        <span class="metric-label">Available Free Time</span>
+                        <span class="metric-value text-emerald" id="metricFreeBuffer">3.5 hrs</span>
+                    </div>
+                    <div class="metric-node">
+                        <span class="metric-label">Conflict Status</span>
+                        <span class="metric-value text-emerald" id="metricConflictStatus">
+                            <i class="fa-solid fa-shield-check"></i> 0 Overlaps
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- BENTO 2-COLUMN GRID -->
+            <div class="bento-grid">
+
+                <!-- COLUMN 1: Circadian Biological Anchors & Routine Control -->
+                <section class="bento-card" id="circadianCard">
+                    <div class="card-header">
+                        <div class="card-header-title">
+                            <i class="fa-solid fa-dna text-accent-indigo"></i>
+                            <h2>Daily Routines & Habits</h2>
+                        </div>
+                        <button class="btn-text btn-sm" id="resetAnchorsBtn" title="Reset to standard default routines">
+                            <i class="fa-solid fa-rotate-left"></i> Defaults
+                        </button>
+                    </div>
+                    <p class="card-desc">
+                        Fixed daily habits like sleep, meals, and exercise that form the foundation of your schedule.
+                    </p>
+
+                    <div class="anchors-list" id="anchorsList">
+                        <!-- Sleep Anchor -->
+                        <div class="anchor-tile" data-anchor-type="sleep">
+                            <div class="anchor-tile-header">
+                                <div class="anchor-icon bg-indigo">
+                                    <i class="fa-solid fa-bed"></i>
+                                </div>
+                                <div class="anchor-info">
+                                    <h3>Sleep Routine</h3>
+                                    <span class="anchor-sub">Bedtime &amp; Wake Time</span>
+                                </div>
+                                <span class="tag tag-indigo">Fixed Routine</span>
+                            </div>
+                            <div class="anchor-controls-grid">
+                                <div class="form-group">
+                                    <label for="sleepStartInput"><i class="fa-solid fa-moon"></i> Sleep Start</label>
+                                    <input type="time" id="sleepStartInput" class="form-control" value="23:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="sleepEndInput"><i class="fa-solid fa-sun"></i> Wake Time</label>
+                                    <input type="time" id="sleepEndInput" class="form-control" value="07:00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Meals Anchor: Breakfast, Lunch, Dinner -->
+                        <div class="anchor-tile" data-anchor-type="meals">
+                            <div class="anchor-tile-header">
+                                <div class="anchor-icon bg-emerald">
+                                    <i class="fa-solid fa-utensils"></i>
+                                </div>
+                                <div class="anchor-info">
+                                    <h3>Meal Times</h3>
+                                    <span class="anchor-sub">Breakfast, Lunch &amp; Dinner</span>
+                                </div>
+                                <span class="tag tag-emerald">Meals</span>
+                            </div>
+                            <div class="anchor-controls-grid triple-col">
+                                <div class="form-group">
+                                    <label for="breakfastTimeInput">Breakfast</label>
+                                    <input type="time" id="breakfastTimeInput" class="form-control" value="08:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="lunchTimeInput">Lunch</label>
+                                    <input type="time" id="lunchTimeInput" class="form-control" value="13:00">
+                                </div>
+                                <div class="form-group">
+                                    <label for="dinnerTimeInput">Dinner</label>
+                                    <input type="time" id="dinnerTimeInput" class="form-control" value="20:00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Workout Session Anchor -->
+                        <div class="anchor-tile" data-anchor-type="workout">
+                            <div class="anchor-tile-header">
+                                <div class="anchor-icon bg-amber">
+                                    <i class="fa-solid fa-dumbbell"></i>
+                                </div>
+                                <div class="anchor-info">
+                                    <h3>Exercise &amp; Workout</h3>
+                                    <span class="anchor-sub">Workout Duration &amp; Schedule</span>
+                                </div>
+                                <span class="tag tag-amber">Exercise</span>
+                            </div>
+                            <div class="anchor-controls-grid">
+                                <div class="form-group">
+                                    <label for="workoutStartInput">Session Start</label>
+                                    <input type="time" id="workoutStartInput" class="form-control" value="17:30">
+                                </div>
+                                <div class="form-group">
+                                    <label for="workoutDurationInput">Duration (Mins)</label>
+                                    <input type="number" id="workoutDurationInput" class="form-control" min="15" max="180" step="5" value="60">
+                                </div>
+                            </div>
+                            <div class="relative-chain-box">
+                                <span class="chain-label"><i class="fa-solid fa-link"></i> Linked Post-Workout Meal:</span>
+                                <span class="chain-val" id="postWorkoutMealCalc">Automatically set 30m after finish</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- COLUMN 2: Today's Tasks & Schedule Control -->
+                <section class="bento-card" id="tasksCard">
+                    <div class="card-header">
+                        <div class="card-header-title">
+                            <i class="fa-solid fa-bolt text-accent-cyan"></i>
+                            <h2>Today's Tasks</h2>
+                        </div>
+                        <div class="card-header-actions">
+                            <button class="btn btn-secondary btn-sm" id="openAnalyzeSlotsBtn">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Free Slots
+                            </button>
+                            <button class="btn btn-primary btn-sm" id="openAddTaskModalBtn">
+                                <i class="fa-solid fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Overlap Resolver Strategy Toolbar -->
+                    <div class="strategy-selector-bar">
+                        <span class="strategy-label"><i class="fa-solid fa-sliders"></i> Overlap Resolver:</span>
+                        <div class="strategy-pill-group" id="strategyPillGroup">
+                            <button class="strategy-pill active" data-strategy="ripple" title="Automatically push flexible tasks forward to fit your day">
+                                <i class="fa-solid fa-water"></i> Auto-Shift Tasks
+                            </button>
+                            <button class="strategy-pill" data-strategy="least-priority" title="Skip lowest priority task when schedule overflows">
+                                <i class="fa-solid fa-arrows-split-up-and-left"></i> Skip Low Priority
+                            </button>
+                            <button class="strategy-pill" data-strategy="strict" title="Keep exact times and highlight any schedule overlaps">
+                                <i class="fa-solid fa-ban"></i> Show Overlaps
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tasks Stream List -->
+                    <div class="tasks-stream-container" id="tasksStreamList">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </section>
+            </div>
+
+            <!-- SOUND ALERTS & ALARM STRIP -->
+            <section class="bento-card hardware-alarm-card" id="alarmCard">
+                <div class="card-header">
+                    <div class="card-header-title">
+                        <i class="fa-solid fa-microchip text-accent-rose"></i>
+                        <h2>Sound Alerts &amp; Alarm Tones</h2>
+                    </div>
+                    <div class="alarm-status-pill" id="alarmStatusPill">
+                        <span class="pulse-dot active"></span>
+                        <span>Alert Sounds Enabled</span>
+                    </div>
+                </div>
+                <div class="alarm-controls-grid">
+                    <div class="alarm-info-block">
+                        <h3>Built-in Alert Tones</h3>
+                        <p>Clear sound alerts generated right in your browser for task transitions, alarms, and reminders. No external audio files needed.</p>
+                        <div class="synth-test-buttons">
+                            <button class="btn btn-secondary btn-sm" id="testWakeChimeBtn">
+                                <i class="fa-solid fa-bell"></i> Test Wake Alarm
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="testTransitionChimeBtn">
+                                <i class="fa-solid fa-clock-rotate-left"></i> Test Task Change Tone
+                            </button>
+                            <button class="btn btn-secondary btn-sm" id="testUrgentAlertBtn">
+                                <i class="fa-solid fa-triangle-exclamation text-rose"></i> Test Urgent Alert
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="alarm-sync-block">
+                        <h3>Save to Calendar &amp; Devices</h3>
+                        <p>Export your daily schedule as a standard calendar file (.ics) with built-in reminders for Google Calendar, Apple Calendar, and Outlook.</p>
+                        <div class="sync-actions">
+                            <button class="btn btn-primary" id="downloadIcsFileBtn">
+                                <i class="fa-solid fa-cloud-arrow-down"></i> Save to Calendar (.ics)
+                            </button>
+                            <button class="btn btn-secondary" id="requestNotifyPermissionBtn">
+                                <i class="fa-solid fa-bell"></i> Enable Notifications
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACTIVE MOBILE & WEB ALARMS LIST -->
+                <div class="active-alarms-section">
+                    <div class="alarms-section-header">
+                        <div>
+                            <h3><i class="fa-solid fa-clock text-accent"></i> Scheduled Alarms &amp; Daily Reminders</h3>
+                            <p class="alarms-section-sub">Configured alarms ring automatically via sound synthesizer, vibration, and your phone's Clock app.</p>
+                        </div>
+                        <button class="btn btn-primary btn-sm" id="addNewAlarmManualBtn">
+                            <i class="fa-solid fa-plus"></i> Add New Alarm
+                        </button>
+                    </div>
+                    <div class="active-alarms-list" id="activeAlarmsList">
+                        <!-- Populated dynamically by AlarmEngine.renderAlarmsList() -->
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- MOBILE BOTTOM NAVIGATION (PWA Mobile View) -->
+        <nav class="mobile-bottom-nav" id="mobileBottomNav">
+            <button class="bottom-nav-item active" data-target="timelineHeroSection">
+                <i class="fa-solid fa-chart-gantt"></i>
+                <span>Timeline</span>
+            </button>
+            <button class="bottom-nav-item" data-target="circadianCard">
+                <i class="fa-solid fa-dna"></i>
+                <span>Routines</span>
+            </button>
+            <button class="bottom-nav-item" data-target="tasksCard">
+                <i class="fa-solid fa-bolt"></i>
+                <span>Tasks</span>
+            </button>
+            <button class="bottom-nav-item" data-target="alarmCard">
+                <i class="fa-solid fa-microchip"></i>
+                <span>Sound Alerts</span>
+            </button>
+        </nav>
+    </div>
+
+    <!-- MODAL 1: ADD / EDIT TASK MODAL -->
+    <div class="modal-overlay" id="taskModalOverlay" hidden>
+        <div class="modal-card" id="taskModalCard">
+            <div class="modal-header">
+                <h3 id="taskModalTitle"><i class="fa-solid fa-plus-circle text-accent"></i> Add Task</h3>
+                <button class="modal-close-btn" id="closeTaskModalBtn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="taskForm" class="modal-form">
+                <input type="hidden" id="taskIdInput">
+
+                <div class="form-group">
+                    <label for="taskTitleInput">Task Title *</label>
+                    <input type="text" id="taskTitleInput" class="form-control" placeholder="e.g. Deep Work: Architecture Review" required>
+                </div>
+
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="taskCategoryInput">Category</label>
+                        <select id="taskCategoryInput" class="form-control">
+                            <option value="deep-work">🧠 Deep Work / Focus</option>
+                            <option value="meeting">🤝 Meeting / Calls</option>
+                            <option value="admin">📋 Admin / Routine</option>
+                            <option value="learning">📚 Research / Learning</option>
+                            <option value="personal">⚡ Personal / Break</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskPriorityInput">Priority</label>
+                        <select id="taskPriorityInput" class="form-control">
+                            <option value="high">🔴 High Priority (P1)</option>
+                            <option value="medium" selected>🟡 Medium Priority (P2)</option>
+                            <option value="low">🟢 Low Priority (P3)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Rigidity Matrix Selector -->
+                <div class="form-group">
+                    <label>Task Flexibility</label>
+                    <div class="rigidity-selector-grid">
+                        <label class="rigidity-card active">
+                            <input type="radio" name="rigidityType" value="elastic" checked>
+                            <div class="rigidity-info">
+                                <span class="rigidity-title"><i class="fa-solid fa-compress"></i> Flexible Time</span>
+                                <span class="rigidity-sub">Fits automatically into free time</span>
+                            </div>
+                        </label>
+                        <label class="rigidity-card">
+                            <input type="radio" name="rigidityType" value="hard">
+                            <div class="rigidity-info">
+                                <span class="rigidity-title"><i class="fa-solid fa-lock"></i> Fixed Time</span>
+                                <span class="rigidity-sub">Set exact start &amp; end time</span>
+                            </div>
+                        </label>
+                        <label class="rigidity-card">
+                            <input type="radio" name="rigidityType" value="relative">
+                            <div class="rigidity-info">
+                                <span class="rigidity-title"><i class="fa-solid fa-link"></i> Linked Task</span>
+                                <span class="rigidity-sub">Starts after a routine or task</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Dynamic Rigidity Controls -->
+                <div id="elasticControlsSection" class="dynamic-rigidity-section">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="taskDurationInput">Duration (Minutes)</label>
+                            <input type="number" id="taskDurationInput" class="form-control" min="10" max="480" step="5" value="60">
+                        </div>
+                        <div class="form-group">
+                            <label for="taskPreferredStartInput">Preferred Start (Optional)</label>
+                            <input type="time" id="taskPreferredStartInput" class="form-control" value="09:30">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="hardControlsSection" class="dynamic-rigidity-section" hidden>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="taskHardStartInput">Exact Start Time *</label>
+                            <input type="time" id="taskHardStartInput" class="form-control" value="14:00">
+                        </div>
+                        <div class="form-group">
+                            <label for="taskHardEndInput">Exact End Time *</label>
+                            <input type="time" id="taskHardEndInput" class="form-control" value="15:00">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="relativeControlsSection" class="dynamic-rigidity-section" hidden>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="taskRelativeTarget">Starts After</label>
+                            <select id="taskRelativeTarget" class="form-control">
+                                <option value="wake">🌅 Wake Up Time</option>
+                                <option value="breakfast">🍳 Breakfast</option>
+                                <option value="lunch">🥗 Lunch</option>
+                                <option value="workout">🏋️ Workout</option>
+                                <option value="dinner">🍲 Dinner</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskRelativeOffset">Wait Time (Minutes after)</label>
+                            <input type="number" id="taskRelativeOffset" class="form-control" min="0" max="240" step="5" value="30">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskRelativeDuration">Duration (Minutes)</label>
+                        <input type="number" id="taskRelativeDuration" class="form-control" min="10" max="300" step="5" value="45">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="cancelTaskModalBtn">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="saveTaskModalBtn">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 2: SMART FREE-SLOT ANALYZER MODAL -->
+    <div class="modal-overlay" id="slotsModalOverlay" hidden>
+        <div class="modal-card" id="slotsModalCard">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles text-accent-cyan"></i> Find Free Time</h3>
+                <button class="modal-close-btn" id="closeSlotsModalBtn" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Available time slots based on your daily sleep, meals, workouts, and fixed tasks.
+                </p>
+                <div class="free-slots-list" id="freeSlotsContainer">
+                    <!-- Rendered dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="dismissSlotsModalBtn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: START NEW SCHEDULE / MEAL PLAN SETUP WIZARD MODAL -->
+    <div class="modal-overlay" id="wizardModalOverlay" hidden>
+        <div class="modal-card modal-card-lg" id="wizardModalCard">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-wand-magic-sparkles text-accent"></i> Start New Schedule — Select Meal Plan</h3>
+                <button class="modal-close-btn" id="closeWizardModalBtn" aria-label="Close modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-desc">
+                    Daily meals structure your waking hours. Pick a plan below to set up your meal routines. You can edit times anytime later.
+                </p>
+
+                <div class="meal-plan-grid">
+                    <!-- Option 1: 3 Meals a Day (Default) -->
+                    <div class="meal-plan-card active" data-plan="standard3" id="planCardStandard3">
+                        <div class="plan-card-header">
+                            <div class="plan-icon bg-indigo">
+                                <i class="fa-solid fa-utensils"></i>
+                            </div>
+                            <div class="plan-title-block">
+                                <h4>Standard 3-Meal Plan <span class="badge-recommended">Default</span></h4>
+                                <span class="plan-sub">Breakfast, Lunch &amp; Dinner</span>
+                            </div>
+                            <input type="radio" name="mealPlanChoice" value="standard3" checked class="plan-radio">
+                        </div>
+                        <div class="plan-details">
+                            <span class="plan-slot-chip"><i class="fa-solid fa-sun"></i> Breakfast: 08:00</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-utensils"></i> Lunch: 13:00</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-moon"></i> Dinner: 20:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: 2 Meals a Day -->
+                    <div class="meal-plan-card" data-plan="intermittent2" id="planCardIntermittent2">
+                        <div class="plan-card-header">
+                            <div class="plan-icon bg-emerald">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div class="plan-title-block">
+                                <h4>2 Meals a Day</h4>
+                                <span class="plan-sub">Lunch &amp; Dinner Only</span>
+                            </div>
+                            <input type="radio" name="mealPlanChoice" value="intermittent2" class="plan-radio">
+                        </div>
+                        <div class="plan-details">
+                            <span class="plan-slot-chip"><i class="fa-solid fa-utensils"></i> Lunch: 13:00</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-moon"></i> Dinner: 20:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Option 3: 5 Meals Fitness & Gym Plan -->
+                    <div class="meal-plan-card" data-plan="fitness5" id="planCardFitness5">
+                        <div class="plan-card-header">
+                            <div class="plan-icon bg-amber">
+                                <i class="fa-solid fa-dumbbell"></i>
+                            </div>
+                            <div class="plan-title-block">
+                                <h4>5 Meals Fitness &amp; Gym Plan</h4>
+                                <span class="plan-sub">3 Main Meals + Pre &amp; Post Workout Diets</span>
+                            </div>
+                            <input type="radio" name="mealPlanChoice" value="fitness5" class="plan-radio">
+                        </div>
+                        <div class="plan-details">
+                            <span class="plan-slot-chip"><i class="fa-solid fa-sun"></i> Breakfast: 08:00</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-utensils"></i> Lunch: 13:00</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-bolt text-amber"></i> Pre-Workout Diet (2h before gym)</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-dumbbell text-amber"></i> Gym Workout Session</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-bottle-water text-emerald"></i> Post-Workout Diet (after gym)</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-moon"></i> Dinner: 20:30</span>
+                        </div>
+
+                        <!-- Dynamic Gym Time Inputs for Option 3 -->
+                        <div class="gym-input-section" id="gymInputsContainer" style="display: none;">
+                            <h5><i class="fa-solid fa-clock"></i> Set Your Gym Timing:</h5>
+                            <div class="form-row-2">
+                                <div class="form-group">
+                                    <label for="wizardGymStartInput">Gym Start Time</label>
+                                    <input type="time" id="wizardGymStartInput" class="form-control" value="17:30">
+                                </div>
+                                <div class="form-group">
+                                    <label for="wizardGymDurationInput">Gym Duration (Mins)</label>
+                                    <input type="number" id="wizardGymDurationInput" class="form-control" min="30" max="180" step="15" value="60">
+                                </div>
+                            </div>
+                            <p class="gym-calc-preview" id="gymCalcPreviewText">
+                                Pre-Workout Diet set to <strong>15:30</strong> (2h before) &amp; Post-Workout Diet at <strong>18:30</strong> (after gym).
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Option 4: Custom / Blank Plan -->
+                    <div class="meal-plan-card" data-plan="custom" id="planCardCustom">
+                        <div class="plan-card-header">
+                            <div class="plan-icon bg-cyan">
+                                <i class="fa-solid fa-file-lines"></i>
+                            </div>
+                            <div class="plan-title-block">
+                                <h4>Custom / Blank Plan</h4>
+                                <span class="plan-sub">Start with a clean blank canvas — no preset meal timings</span>
+                            </div>
+                            <input type="radio" name="mealPlanChoice" value="custom" class="plan-radio">
+                        </div>
+                        <div class="plan-details">
+                            <span class="plan-slot-chip"><i class="fa-solid fa-sparkles"></i> 100% Free Canvas</span>
+                            <span class="plan-slot-chip"><i class="fa-solid fa-plus-circle"></i> Add your own custom tasks &amp; timings freely</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelWizardBtn">Cancel</button>
+                <button type="button" class="btn btn-primary" id="applyMealPlanBtn">
+                    <i class="fa-solid fa-check-circle"></i> Create Schedule
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: SMART ALARM SETUP & RECURRENCE MODAL -->
+    <div class="modal-overlay" id="alarmPromptModalOverlay" hidden>
+        <div class="modal-card alarm-modal-card" id="alarmPromptModalCard">
+            <div class="modal-header">
+                <div class="alarm-header-badge">
+                    <i class="fa-solid fa-bell-ring text-accent-rose pulse-anim"></i>
+                    <h3 id="alarmPromptModalTitle">Set Schedule Alarm</h3>
+                </div>
+                <button class="modal-close-btn" id="closeAlarmPromptModalBtn" aria-label="Close modal">&times;</button>
+            </div>
+            <form id="alarmPromptForm" class="modal-form">
+                <input type="hidden" id="alarmSourceId">
+                <input type="hidden" id="alarmSourceType">
+                <input type="hidden" id="alarmExistingId">
+
+                <!-- Target Event Banner -->
+                <div class="alarm-preview-banner">
+                    <div class="alarm-time-display" id="alarmModalTimeDisplay">07:00 AM</div>
+                    <div class="alarm-target-details">
+                        <h4 id="alarmModalTitleDisplay">Wake Up Routine</h4>
+                        <span class="alarm-target-chip" id="alarmModalTypeBadge"><i class="fa-solid fa-sun"></i> Wake-Up Anchor</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="alarmCustomTitleInput">Alarm Label</label>
+                    <input type="text" id="alarmCustomTitleInput" class="form-control" placeholder="e.g. Wake Up Routine" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="alarmCustomTimeInput">Alarm Time</label>
+                    <input type="time" id="alarmCustomTimeInput" class="form-control" required>
+                </div>
+
+                <!-- Recurrence Frequency Presets -->
+                <div class="form-group">
+                    <label>Recurrence Schedule</label>
+                    <div class="recurrence-presets-grid">
+                        <button type="button" class="recurrence-pill active" data-preset="weekdays">
+                            <i class="fa-solid fa-briefcase"></i>
+                            <span>5 Weekdays (Mon–Fri)</span>
+                        </button>
+                        <button type="button" class="recurrence-pill" data-preset="everyday">
+                            <i class="fa-solid fa-repeat"></i>
+                            <span>Everyday (7 Days)</span>
+                        </button>
+                        <button type="button" class="recurrence-pill" data-preset="weekends">
+                            <i class="fa-solid fa-mug-hot"></i>
+                            <span>Weekends Only (Sat–Sun)</span>
+                        </button>
+                        <button type="button" class="recurrence-pill" data-preset="custom">
+                            <i class="fa-solid fa-sliders"></i>
+                            <span>Custom Days</span>
+                        </button>
+                    </div>
+
+                    <!-- Individual Day Chips Selector -->
+                    <div class="custom-days-selector" id="customDaysSelector">
+                        <label class="day-chip selected" data-day="1">
+                            <input type="checkbox" name="alarmDay" value="1" checked>
+                            <span>Mon</span>
+                        </label>
+                        <label class="day-chip selected" data-day="2">
+                            <input type="checkbox" name="alarmDay" value="2" checked>
+                            <span>Tue</span>
+                        </label>
+                        <label class="day-chip selected" data-day="3">
+                            <input type="checkbox" name="alarmDay" value="3" checked>
+                            <span>Wed</span>
+                        </label>
+                        <label class="day-chip selected" data-day="4">
+                            <input type="checkbox" name="alarmDay" value="4" checked>
+                            <span>Thu</span>
+                        </label>
+                        <label class="day-chip selected" data-day="5">
+                            <input type="checkbox" name="alarmDay" value="5" checked>
+                            <span>Fri</span>
+                        </label>
+                        <label class="day-chip" data-day="6">
+                            <input type="checkbox" name="alarmDay" value="6">
+                            <span>Sat</span>
+                        </label>
+                        <label class="day-chip" data-day="0">
+                            <input type="checkbox" name="alarmDay" value="0">
+                            <span>Sun</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Tone & Device Features Row -->
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="alarmSoundSelect"><i class="fa-solid fa-music text-accent"></i> Alarm Tone</label>
+                        <select id="alarmSoundSelect" class="form-control">
+                            <option value="wake-chime" selected>🔔 Wake-Up Energy Chime</option>
+                            <option value="urgent">🚨 Urgent Attention Siren</option>
+                            <option value="transition">✨ Task Focus Tone</option>
+                            <option value="gentle">🌿 Gentle Ambient Beep</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-solid fa-volume-high text-accent"></i> Preview Sound</label>
+                        <button type="button" class="btn btn-secondary w-100" id="previewSelectedAlarmSoundBtn">
+                            <i class="fa-solid fa-play"></i> Test Sound
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Device Smart Features Toggles -->
+                <div class="alarm-features-box">
+                    <label class="alarm-feature-toggle">
+                        <input type="checkbox" id="alarmVibrateToggle" checked>
+                        <div class="feature-info">
+                            <span class="feature-title"><i class="fa-solid fa-mobile-screen-button"></i> Device Vibration</span>
+                            <span class="feature-desc">Vibrate phone in sync with alarm rhythm</span>
+                        </div>
+                    </label>
+                    <label class="alarm-feature-toggle">
+                        <input type="checkbox" id="alarmNativeClockToggle" checked>
+                        <div class="feature-info">
+                            <span class="feature-title"><i class="fa-brands fa-android text-emerald"></i> Set on Phone's Clock App</span>
+                            <span class="feature-desc">Open Android Clock to register native system alarm</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="skipAlarmPromptBtn">Skip / Later</button>
+                    <button type="submit" class="btn btn-primary" id="confirmSetAlarmBtn">
+                        <i class="fa-solid fa-bell"></i> Set Alarm
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 4: FULL-SCREEN RINGING ALARM OVERLAY -->
+    <div class="alarm-ringing-overlay" id="alarmRingingOverlay" hidden>
+        <div class="alarm-ringing-card">
+            <!-- Pulsing Alarm Bell Animation -->
+            <div class="ringing-bell-wrapper">
+                <div class="ringing-pulse-wave wave-1"></div>
+                <div class="ringing-pulse-wave wave-2"></div>
+                <div class="ringing-pulse-wave wave-3"></div>
+                <div class="ringing-bell-icon">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+            </div>
+
+            <!-- Big Live Digital Time -->
+            <div class="ringing-time-display" id="ringingTimeDisplay">07:00:00 AM</div>
+            <div class="ringing-date-display" id="ringingDateDisplay">Monday, September 23</div>
+
+            <!-- Alarm Title & Details -->
+            <div class="ringing-event-meta">
+                <span class="ringing-category-chip" id="ringingCategoryChip">Wake Up Routine</span>
+                <h2 class="ringing-event-title" id="ringingEventTitle">Wake Up &amp; Hydrate</h2>
+                <p class="ringing-event-sub" id="ringingEventSub">Scheduled Routine Alarm</p>
+            </div>
+
+            <!-- Action Controls: Dismiss & Snooze -->
+            <div class="ringing-action-grid">
+                <button type="button" class="btn btn-snooze" id="snoozeAlarmBtn">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Snooze (5 Min)</span>
+                </button>
+                <button type="button" class="btn btn-dismiss" id="dismissAlarmBtn">
+                    <i class="fa-solid fa-bell-slash"></i>
+                    <span>Dismiss Alarm</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- COMMAND PALETTE (CTRL+K) -->
+    <div class="command-palette-overlay" id="commandPaletteOverlay" hidden>
+        <div class="command-palette-modal">
+            <div class="command-palette-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="commandPaletteInput" placeholder="Type a command or jump to section... (e.g. 'Add task', 'Sleep', 'Export', 'Theme')" autocomplete="off">
+                <span class="cmd-badge">ESC to close</span>
+            </div>
+            <div class="command-palette-results" id="commandPaletteResults">
+                <!-- Dynamically populated commands -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING INTERACTIVE TIMELINE TOOLTIP POPOVER (Global Stacking Layer) -->
+    <div class="timeline-tooltip" id="timelineTooltip" style="display: none;"></div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- External JavaScript Libraries (GSAP 3 + Lenis Smooth Scroll) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+
+    <!-- App Engine Script -->
+    <script src="js/app.js"></script>
+</body>
+</html>
