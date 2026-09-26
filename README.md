@@ -166,7 +166,7 @@ end`;
 
 ## 📄 License
 
-MIT — Free for personal and commercial use.
+MIT — Free for personal use.
 
 ---
 
