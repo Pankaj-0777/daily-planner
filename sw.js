@@ -3,7 +3,7 @@
    Smart Schedule & Alarms
    ======================================== */
 
-const CACHE_NAME = 'pi-scheduler-v1-0';
+const CACHE_NAME = 'daily-planner-v1-1';
 const STATIC_ASSETS = [
     './',
     './index.html',
